@@ -34,7 +34,7 @@ TH1D *histCubeV = new TH1D("histCubeV", "histCubeV", 25, 3100, 3800);
  * MAIN FUNCTION
  */
 
-void photo(TString inputFile = "photoData365.txt"){
+void photo(TString inputFile = "photoData365-0.txt"){
     
     cout << "\n\nStarting process...\n\n";
     

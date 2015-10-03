@@ -27,16 +27,15 @@ using namespace std;
 void histogram(TH1D*, const TString, TCanvas*, const TString, const TString, const TString);
 
 // Initialize histograms
-TH1D *histCubeX = new TH1D("histCubeX", "histCubeX", 15, 8, 10);
-TH1D *histCubeY = new TH1D("histCubeY", "histCubeY", 15, 9, 12);
-TH1D *histCubeZ = new TH1D("histCubeZ", "histCubeZ", 15, 34.5, 39);
-TH1D *histCubeV = new TH1D("histCubeV", "histCubeV", 15, 2880, 4131);
+TH1D *histPoisson = new TH1D("histCubeX", "histCubeX", 101, 49.5, 150.5);
 
 /*
  * MAIN FUNCTION
  */
 
-void cube(TString inputFile = "cubeData.txt"){
+void poisson(TString dataSet = "100"){
+
+    TString inputFile = "poissonData" + dataSet + "ps1s.txt";
 
     TH1::StatOverflows(kTRUE);
     
@@ -44,55 +43,22 @@ void cube(TString inputFile = "cubeData.txt"){
     
     ifstream ifs(inputFile); if(!ifs.is_open()){cout << "Error. File " << inputFile << " not found. Exiting...\n"; return;}
 
-    TString id;
-    Double_t cubeNumber, cubeX, cubeY, cubeZ, cubeV, cubeXErr, cubeYErr, cubeZErr, cubeVErr;
-
-    Double_t mean = 0, nEntries = 0;
+    Double_t count;
     
-    while(ifs >> id >> cubeNumber >> cubeX >> cubeXErr >> cubeY >> cubeYErr >> cubeZ >> cubeZErr >> cubeV >> cubeVErr){
+    while(ifs >> count){
         
-        if(id.Contains("#")) continue;
-        
-        histCubeX->Fill(cubeX);
-        histCubeY->Fill(cubeY);
-        histCubeZ->Fill(cubeZ);
-        histCubeV->Fill(cubeV);
+        histPoisson->Fill(count);
 
-        mean += cubeX;
-        nEntries++;
     }
-
-    mean = mean/nEntries;
-
-    Double_t sumSquared =0;
-
-    ifs.clear();
-    ifs.seekg(0, std::ios::beg);
-
-    while(ifs >> id >> cubeNumber >> cubeX >> cubeXErr >> cubeY >> cubeYErr >> cubeZ >> cubeZErr >> cubeV >> cubeVErr){
-        
-        sumSquared += (cubeX-mean)*(cubeX-mean);
-    }
-
-    sumSquared = sumSquared/(nEntries-1);
-
-    cout << TMath::Sqrt(sumSquared) << endl;
     
-    TCanvas *c1 = new TCanvas("Histogram", "Histogram", 1600, 900);
+    TCanvas *c1 = new TCanvas("Histogram", "Histogram", 1920, 1080);
 
     gStyle->SetOptStat(2210);
     //gStyle->SetOptStat(kFALSE);
     gStyle->SetOptFit(1111);
 
-    histCubeX->Fit("gaus", "M");
-    histCubeY->Fit("gaus", "M");
-    histCubeZ->Fit("gaus", "M");
-    histCubeV->Fit("gaus", "M");
 
-    histogram(histCubeX, "", c1, "Length of X side (mm)", "Count", "cubeX");
-    histogram(histCubeY, "", c1, "Length of Y side (mm)", "Count", "cubeY");
-    histogram(histCubeZ, "", c1, "Length of Z side (mm)", "Count", "cubeZ");
-    histogram(histCubeV, "", c1, "Volume of cuboid (mm^{3})", "Count", "cubeV");
+    histogram(histPoisson, "", c1, "Number of decays", "Count", "poisson_" + dataSet);
     
 }
 

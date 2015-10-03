@@ -35,6 +35,8 @@ __init__.py
 
 ## Images
 *.jpg
+*.png
+*.pdf
 
 ## ROOT OBJECT
 *.root
