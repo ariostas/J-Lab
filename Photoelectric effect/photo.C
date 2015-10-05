@@ -65,11 +65,6 @@ void photo(){
     photo435->SetLineColor(kBlue);
     photo546->SetLineColor(kGreen);
     photo577->SetLineColor(kMagenta+2);
-    // photo365->Draw("ALP");
-    // photo404->Draw("ALP");
-    // photo435->Draw("ALP");
-    // photo546->Draw("ALP");
-    // photo577->Draw("same");
 
     TMultiGraph *photoGraphs = new TMultiGraph();
     photoGraphs->Add(photo365);
@@ -97,22 +92,30 @@ void photo(){
 
     TCanvas *can2 = new TCanvas("Photoelectric2", "Photoelectric2", 1920, 1080);
 
-    Double_t cutVoltage[10], cutWavelength[10];
+    Double_t cutVoltage[10], cutFrequency[10], cutVoltageErr[10], cutFrequencyErr[10];
 
-    cutWavelength[0] = 8.213e14; cutVoltage[0] = 0.978524;
-    cutWavelength[1] = 7.408e14; cutVoltage[1] = 0.777271;
-    cutWavelength[2] = 6.879e14; cutVoltage[2] = 0.632909;
-    cutWavelength[3] = 5.49e14; cutVoltage[3] = 0.178967;
-    cutWavelength[4] = 5.196e14; cutVoltage[4] = 0.541412;
+    cutFrequency[0] = 8.213e14; cutVoltage[0] = 9.78680e-01;
+    cutFrequency[1] = 7.408e14; cutVoltage[1] = 7.77430e-01;
+    cutFrequency[2] = 6.879e14; cutVoltage[2] = 6.32989e-01;
+    cutFrequency[3] = 5.490e14; cutVoltage[3] = 1.81230e-01;
+    cutFrequency[4] = 5.196e14; cutVoltage[4] = 6.07524e-01;
 
-    TGraph *cut = new TGraph(5, cutWavelength, cutVoltage);
+    cutFrequencyErr[0] = 9.051e12/2.0; cutVoltageErr[0] = 2.*8.20815e-03;
+    cutFrequencyErr[1] = 7.358e12/2.0; cutVoltageErr[1] = 2.*9.82655e-03;
+    cutFrequencyErr[2] = 6.343e12/2.0; cutVoltageErr[2] = 2.*9.83548e-03;
+    cutFrequencyErr[3] = 4.036e12/2.0; cutVoltageErr[3] = 2.*2.45016e-02;
+    cutFrequencyErr[4] = 3.614e12/2.0; cutVoltageErr[4] = 2.*1.49341e-02;
+
+    TGraphErrors *cut = new TGraphErrors(4, cutFrequency, cutVoltage, cutFrequencyErr, cutVoltageErr);
     cut->SetLineWidth(2);
     cut->SetMarkerColor(4);
     cut->SetMarkerStyle(21);
     TF1 *f = new TF1("f", "[1] * x + [0]");
-    cut->Fit(f);
+    f->SetParameter(1, 4e-15);
+    f->SetParameter(0, -1.2);
+    cut->Fit(f, "m");
     cut->Draw("ALP");
-    cut->GetXaxis()->SetTitle("Frequency (Hz)");
+    cut->GetXaxis()->SetTitle("Light Frequency (Hz)");
     cut->GetYaxis()->SetTitle("Cutoff voltage (V)");
     cut->SetTitle("Photo electric effect");
     can2->SaveAs("fit.png");
@@ -143,14 +146,14 @@ TGraphErrors* analyze(TString inputFile = "photoData365-0_2.txt"){
         
         voltage[x] = tempVoltage;
         current[x] = scaleFactor*tempCurrent;
-        voltageErr[x] = 0.02;
-        currentErr[x] = 2.*scaleFactor*(tempCurrent > 20. ? 1. : (tempCurrent > 2. ? 0.1 : 0.01));
+        voltageErr[x] = 0.01;
+        currentErr[x] = 2*scaleFactor*(tempCurrent > 20. ? 1. : (tempCurrent > 2. ? 0.1 : 0.01));
         
         x++;
     }
 
     TGraphErrors *graph = new TGraphErrors(x, voltage, current, voltageErr, currentErr);
-    TGraph *graph2 = new TGraphErrors(x2, current, voltage);
+    TGraphErrors *graph2 = new TGraphErrors(x2, current, voltage, currentErr, voltageErr);
     TF1 *f = new TF1("f", "[1] * x + [0]");
     graph2->Fit(f);
 

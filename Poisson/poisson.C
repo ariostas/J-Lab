@@ -27,7 +27,7 @@ using namespace std;
 void histogram(TH1D*, const TString, TCanvas*, const TString, const TString, const TString);
 
 // Initialize histograms
-TH1D *histPoisson = new TH1D("histCubeX", "histCubeX", 101, 49.5, 150.5);
+TH1D *histPoisson = new TH1D("histCubeX", "histCubeX", 50, 50, 150);
 
 /*
  * MAIN FUNCTION
@@ -35,7 +35,7 @@ TH1D *histPoisson = new TH1D("histCubeX", "histCubeX", 101, 49.5, 150.5);
 
 void poisson(TString dataSet = "100"){
 
-    TString inputFile = "poissonData" + dataSet + "ps1s.txt";
+    TString inputFile = "poissonData" + dataSet + "ps1s_2.txt";
 
     TH1::StatOverflows(kTRUE);
     
