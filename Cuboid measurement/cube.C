@@ -28,9 +28,9 @@ void histogram(TH1D*, const TString, TCanvas*, const TString, const TString, con
 
 // Initialize histograms
 TH1D *histCubeX = new TH1D("histCubeX", "histCubeX", 15, 8, 10);
-TH1D *histCubeY = new TH1D("histCubeY", "histCubeY", 15, 9, 12);
+TH1D *histCubeY = new TH1D("histCubeY", "histCubeY", 12, 8.5, 12.5);
 TH1D *histCubeZ = new TH1D("histCubeZ", "histCubeZ", 15, 34.5, 39);
-TH1D *histCubeV = new TH1D("histCubeV", "histCubeV", 15, 2880, 4131);
+TH1D *histCubeV = new TH1D("histCubeV", "histCubeV", 14, 2.8, 4.2);
 
 /*
  * MAIN FUNCTION
@@ -56,7 +56,7 @@ void cube(TString inputFile = "cubeData.txt"){
         histCubeX->Fill(cubeX);
         histCubeY->Fill(cubeY);
         histCubeZ->Fill(cubeZ);
-        histCubeV->Fill(cubeV);
+        histCubeV->Fill(cubeV/1000.0);
 
         mean += cubeX;
         nEntries++;
@@ -84,15 +84,16 @@ void cube(TString inputFile = "cubeData.txt"){
     //gStyle->SetOptStat(kFALSE);
     gStyle->SetOptFit(1111);
 
-    histCubeX->Fit("gaus", "M");
-    histCubeY->Fit("gaus", "M");
-    histCubeZ->Fit("gaus", "M");
-    histCubeV->Fit("gaus", "M");
+    c1->Divide(2,2);
 
+    c1->cd(1);
     histogram(histCubeX, "", c1, "Length of X side (mm)", "Count", "cubeX");
+    c1->cd(2);
     histogram(histCubeY, "", c1, "Length of Y side (mm)", "Count", "cubeY");
+    c1->cd(3);
     histogram(histCubeZ, "", c1, "Length of Z side (mm)", "Count", "cubeZ");
-    histogram(histCubeV, "", c1, "Volume of cuboid (mm^{3})", "Count", "cubeV");
+    c1->cd(4);
+    histogram(histCubeV, "", c1, "Volume of cuboid (cm^{3})", "Count", "cubeV");
     
 }
 
@@ -100,37 +101,49 @@ void cube(TString inputFile = "cubeData.txt"){
  * FUNCTION FOR SAVING ONE HISTOGRAM
  */
 
-void histogram(TH1D *histo, const TString histName, TCanvas *can, const TString xTitle, const TString yTitle, const TString name){
+void histogram(TH1D *histoData, const TString histName, TCanvas *can, const TString xTitle, const TString yTitle, const TString name){
 
-    histo->SetLineWidth(3);
-    histo->Draw("E1");
+    histoData->SetLineWidth(2);
+    histoData->SetMarkerStyle(20);
+    histoData->SetMarkerSize(1.5);
+    histoData->SetMarkerColor(kRed);
+    histoData->SetLineColor(kBlack);
+    TF1 *f = new TF1(histName, "[0]*TMath::Gaus(x,[1],[2])");
+    f->SetParameter(0, histoData->GetMaximum());
+    f->SetParameter(1, histoData->GetMean());
+    f->SetParameter(2, histoData->GetStdDev());
+    f->SetParName(0, "Constant");
+    f->SetParName(1, "Mean");
+    f->SetParName(2, "Sigma");
+    f->SetLineColor(kBlue);
+    f->SetLineWidth(4);
+    histoData->Fit(f, "M");
 
-    TF1 *f1 = new TF1(histName,TString::Format("%4.3f*TMath::Gaus(x,%4.3f,%4.3f,1)",
-        histo->Integral()*histo->GetBinWidth(1), histo->GetMean(), histo->GetStdDev()),
-        histo->GetXaxis()->GetXmin(), histo->GetXaxis()->GetXmax()); 
-    f1->SetLineWidth(3);
-    f1->SetLineColor(kRed);
-    //f1->Draw("same");
-
-    TPaveText *pt = new TPaveText(0.605,0.675,0.885,0.875, "brNDC");
-    // pt->AddText(TString::Format("Entries = %3i", histo->Integral()));
-    pt->AddText("Total entries = 103");
-    pt->AddText(TString::Format("Mean = %4.1f #pm %4.1f_{stat} #pm 0.5_{syst} mm", histo->GetMean(), Max(histo->GetMeanError(),0.1)));
-    pt->AddText(TString::Format("Std dev = %4.2f mm", histo->GetStdDev()));
-    //pt->Draw();
+    gStyle->SetLegendBorderSize(0);
+    TLegend *leg = new TLegend(0.65,0.6,0.885,0.875);
+    leg->SetTextSize(0.055);
+    leg->AddEntry(histoData, "Data","lep");
+    leg->AddEntry(f, "Gaussian fit","l");
+    
+    histoData->Draw("E1");
+    leg->Draw("same");
 
     // add axis labels
-    histo->GetXaxis()->SetTitle(xTitle);
-    histo->GetXaxis()->SetTitleSize(0.045);
-    histo->GetXaxis()->SetTitleOffset(1.05);
-    histo->GetXaxis()->SetLabelOffset(0.010);
-    histo->GetXaxis()->SetLabelSize(0.05);
-    histo->GetYaxis()->SetTitle(yTitle);
-    histo->GetYaxis()->SetTitleSize(0.045);
-    histo->GetYaxis()->SetTitleOffset(0.70);
-    histo->GetYaxis()->SetLabelSize(0.05);
-    histo->SetTitle(histName); // title on top
+    histoData->GetXaxis()->SetTitle(xTitle);
+    histoData->GetXaxis()->CenterTitle();
+    histoData->GetXaxis()->SetTitleSize(0.055);
+    histoData->GetXaxis()->SetTitleOffset(0.87);
+    histoData->GetXaxis()->SetLabelOffset(0.010);
+    histoData->GetXaxis()->SetLabelSize(0.05);
+    histoData->GetYaxis()->SetTitle(yTitle);
+    histoData->GetYaxis()->CenterTitle();
+    histoData->GetYaxis()->SetTitleSize(0.055);
+    histoData->GetYaxis()->SetTitleOffset(0.70);
+    histoData->GetYaxis()->SetLabelSize(0.05);
+    gStyle->SetTitleSize(0.08, "t");
+    histoData->SetTitle(histName);
     can->Update();
 
     can->SaveAs(name + ".png");
+    can->SaveAs(name + ".pdf");
 }
