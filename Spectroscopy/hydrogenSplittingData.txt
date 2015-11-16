@@ -1,0 +1,9 @@
+#deuterium_6562_splitting_Oct21_1       6562_1        6533.025      6533.105     200.0
+#deuterium_6562_splitting_Oct21_2       6562_2        6533.025      6533.105     200.0
+#deuterium_6562_splitting_Oct21_3       6562_3        6533.025      6533.105     200.0
+#deuterium_6562_splitting_Oct21_4       6562_4        6533.025      6533.105     200.0
+#deuterium_6562_splitting_Oct21_5       6562_5        6533.025      6533.105     200.0
+#hydrogen(deuterium)_6562_splitting_Oct21_1       6562_h1        6534.823      6534.900     200.0
+hydrogen(deuterium)_6562_splitting_Oct21_2       6562_h2        6534.823      6534.900     200.0
+#deuterium_6562_Oct21_1       6562_d1        6533.08           0     100.0
+#deuterium_6562_Oct21_2       6562_d2        6533.08           0     100.0

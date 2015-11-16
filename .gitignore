@@ -37,6 +37,7 @@ __init__.py
 *.jpg
 *.png
 *.pdf
+*.gif
 
 ## ROOT OBJECT
 *.root
