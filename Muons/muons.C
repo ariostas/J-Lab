@@ -36,6 +36,7 @@ TH1D* readFile(TString, TF1*);
 TGraph* calibration();
 TH1D* produceMonteCarlo(TF1*, TString);
 TH1D* readMonteCarlo(TF1*, TString);
+void produceMonteCarloSimple(TString, Int_t);
 
 UInt_t h = 0;
 TF1 *fcal;
@@ -49,32 +50,32 @@ void muons(){
     TH1::StatOverflows(kTRUE);
     gStyle->SetOptFit(1111);
     gStyle->SetOptStat(10);
-    // TCanvas *can = new TCanvas("Canvas", "Canvas", 1600, 900);
+    TCanvas *can = new TCanvas("Canvas", "Canvas", 1600, 900);
 
     TGraph *gcal = calibration();
 
     TH1D *lifetime = readFile("lifetime_data2", fcal);
 
-    // TF1 *fLife = new TF1("lifetime", "[0]+[1]*TMath::Exp(-x/[2])");
-    // fLife->SetParameter(0, 0);
-    // fLife->SetParameter(1, lifetime->GetMaximum()*Exp(1));
-    // fLife->SetParameter(2, 2.197);
-    // fLife->SetParName(0, "Constant");
-    // fLife->SetParName(1, "Normalization");
-    // fLife->SetParName(2, "Mean lifetime");
-    // lifetime->Fit(fLife, "ME");
-
-    TF1 *fLife = new TF1("lifetime", "[0]+[1]*(0.44*TMath::Exp(-x/[2])+0.56*TMath::Exp(-x/[3]))");
+    TF1 *fLife = new TF1("lifetime", "[0]+[1]*TMath::Exp(-x/[2])");
     fLife->SetParameter(0, 0);
     fLife->SetParameter(1, lifetime->GetMaximum()*Exp(1));
-    fLife->FixParameter(2, 2.023);
-    fLife->SetParameter(3, 2.197);
+    fLife->SetParameter(2, 2.197);
+    fLife->SetParName(0, "Constant");
+    fLife->SetParName(1, "Normalization");
+    fLife->SetParName(2, "Mean lifetime");
     lifetime->Fit(fLife, "ME");
 
-    // histogram(lifetime, "Data", can, "Time (#mus)", "Counts", "lifetime_dot", "dot");
-    // histogram(lifetime, "Data", can, "Time (#mus)", "Counts", "lifetime_line", "line");
-    // histogram(lifetime, "Data", can, "Time (#mus)", "Counts", "lifetime_dot_log", "dot log");
-    // histogram(lifetime, "Data", can, "Time (#mus)", "Counts", "lifetime_line_log", "line log");
+    // TF1 *fLife = new TF1("lifetime", "[0]+[1]*(0.44*TMath::Exp(-x/[2])+0.56*TMath::Exp(-x/[3]))");
+    // fLife->SetParameter(0, 0);
+    // fLife->SetParameter(1, lifetime->GetMaximum()*Exp(1));
+    // fLife->FixParameter(2, 2.023);
+    // fLife->SetParameter(3, 2.197);
+    // lifetime->Fit(fLife, "ME");
+
+    histogram(lifetime, "Data", can, "Decay time (#mus)", "Counts", "lifetime_dot", "dot");
+    histogram(lifetime, "Data", can, "Decay time (#mus)", "Counts", "lifetime_line", "line");
+    histogram(lifetime, "Data", can, "Decay time (#mus)", "Counts", "lifetime_dot_log", "dot log");
+    histogram(lifetime, "Data", can, "Decay time (#mus)", "Counts", "lifetime_line_log", "line log");
     //graph(gcal, "speed", can, "times", "distances", "calibration");
 
     cout << "The mean life of muon is " << fLife->GetParameter(2) << " +- " << fLife->GetParError(2) << " microseconds" << endl;
@@ -91,14 +92,19 @@ void muons(){
 
     cout << "The stopping rate of muons was " << detectionRate << " Hz" << endl;
 
-    // TH1D *mcHist = produceMonteCarlo(fcal, "MonteCarloData");
-    // histogram(mcHist, "meas 1", can, "Time (#mus)", "Counts", "lifetimeMC");
+    // TH1D *mcHist1 = produceMonteCarlo(fcal, "MonteCarloData_new_1");
+    // histogram(mcHist1, "meas 1", can, "Time (#mus)", "Counts", "lifetimeMC_new1", "dot");
+    // TH1D *mcHist2 = produceMonteCarlo(fcal, "MonteCarloData_new_2");
+    // histogram(mcHist2, "meas 1", can, "Time (#mus)", "Counts", "lifetimeMC_new2", "dot");
 
-    // TH1D *mcHist = readMonteCarlo(fcal, "MonteCarloData1");
-    // histogram(mcHist, "Monte Carlo", can, "Time (#mus)", "Counts", "lifetimeMC_dot", "dot");
-    // histogram(mcHist, "Monte Carlo", can, "Time (#mus)", "Counts", "lifetimeMC_line", "line");
-    // histogram(mcHist, "Monte Carlo", can, "Time (#mus)", "Counts", "lifetimeMC_dot_log", "dot log");
-    // histogram(mcHist, "Monte Carlo", can, "Time (#mus)", "Counts", "lifetimeMC_line_log", "line log");
+    produceMonteCarloSimple("./Data/MonteCarloData_simple_1", 22658);
+    produceMonteCarloSimple("./Data/MonteCarloData_simple_2", 22658);
+
+    TH1D *mcHist = readMonteCarlo(fcal, "MonteCarloData_simple_1");
+    histogram(mcHist, "Monte Carlo", can, "Decay time (#mus)", "Counts", "lifetimeMC_dot", "dot");
+    histogram(mcHist, "Monte Carlo", can, "Decay time (#mus)", "Counts", "lifetimeMC_line", "line");
+    histogram(mcHist, "Monte Carlo", can, "Decay time (#mus)", "Counts", "lifetimeMC_dot_log", "dot log");
+    histogram(mcHist, "Monte Carlo", can, "Decay time (#mus)", "Counts", "lifetimeMC_line_log", "line log");
 
     // TF1 *lognormal = new TF1("lognormal", "[0]*TMath::LogNormal(TMath::Abs([1]*x-[2]), [3])", 0, 2048);
     // lognormal->SetParameter(0, 20);
@@ -275,8 +281,8 @@ TH1D* produceMonteCarlo(TF1* cal, TString outputFile){
         Double_t distance = radiusDist->GetRandom(0, diameterConsidered);
         Double_t energy = energyDist->GetRandom(10, 10000);
         Double_t phi = phiDist->GetRandom(0, Pi()/2.);
-        Double_t decayTime = (muonType <= 0.56 ? decayTimePosDist->GetRandom(0, 25) : decayTimeNegDist->GetRandom(0, 25));
-        Double_t decayEnergy = decayEnergyDist->GetRandom(0, 1)*muonMass/2.;
+        // Double_t decayTime = (muonType <= 0.56 ? decayTimePosDist->GetRandom(0, 25) : decayTimeNegDist->GetRandom(0, 25));
+        // Double_t decayEnergy = decayEnergyDist->GetRandom(0, 1)*muonMass/2.;
 
         if((distance <= diameterConsidered/2. && diameterConsidered/2. - distance <= diameterDetector/2.) || 
             (distance >= diameterConsidered/2. && distance - diameterConsidered/2.<= diameterDetector/2.)){
@@ -305,10 +311,15 @@ TH1D* produceMonteCarlo(TF1* cal, TString outputFile){
 
             Double_t remainingEnergy = energy - pathLength*stoppingRate;
 
-            if(remainingEnergy <= 0 && decayEnergy >= minDecayEnergy){
-                nCounts++;
-                histo->Fill(decayTime + timeOffset);
-                outFile << muonType << " " << theta << " " << distance << " " << energy << " " << phi << " " << decayTime << " " << decayEnergy << endl;
+            if(remainingEnergy <= 0){
+
+                Double_t decayEnergy = decayEnergyDist->GetRandom(0, 1)*muonMass/2.;
+                if(decayEnergy >= minDecayEnergy){
+                    Double_t decayTime = (muonType <= 0.56 ? decayTimePosDist->GetRandom(0, 20) : decayTimeNegDist->GetRandom(0, 20));
+                    nCounts++;
+                    histo->Fill(decayTime + timeOffset);
+                    outFile << muonType << " " << theta << " " << distance << " " << energy << " " << phi << " " << decayTime << " " << decayEnergy << endl;
+                }
             }
 
         }
@@ -347,10 +358,15 @@ TH1D* produceMonteCarlo(TF1* cal, TString outputFile){
 
             Double_t remainingEnergy = energy - pathLength*stoppingRate;
 
-            if(remainingEnergy <= 0 && decayEnergy >= minDecayEnergy){
-                nCounts++;
-                histo->Fill(decayTime + timeOffset);
-                outFile << muonType << " " << theta << " " << distance << " " << energy << " " << phi << " " << decayTime << " " << decayEnergy << endl;
+            if(remainingEnergy <= 0){
+
+                Double_t decayEnergy = decayEnergyDist->GetRandom(0, 1)*muonMass/2.;
+                if(decayEnergy >= minDecayEnergy){
+                    Double_t decayTime = (muonType <= 0.56 ? decayTimePosDist->GetRandom(0, 20) : decayTimeNegDist->GetRandom(0, 20));
+                    nCounts++;
+                    histo->Fill(decayTime + timeOffset);
+                    outFile << muonType << " " << theta << " " << distance << " " << energy << " " << phi << " " << decayTime << " " << decayEnergy << endl;
+                }
             }
         }
 
@@ -363,16 +379,45 @@ TH1D* produceMonteCarlo(TF1* cal, TString outputFile){
     TF1 *f = new TF1("lifetime", "[0]+[1]*TMath::Exp(-x/[2])");
     f->SetParameter(0, 0);
     f->SetParameter(1, histo->GetMaximum()*Exp(1));
-    f->SetParameter(2, 2.25);
+    f->SetParameter(2, 2.19);
     histo->Fit(f, "ME");
 
     return histo;
 
 }
 
+void produceMonteCarloSimple(TString outputFile, Int_t totalEvents){
+
+    ofstream outFile;
+    outFile.open(outputFile + ".txt");
+    if(!outFile.is_open()) return;
+
+    Double_t meanLifePos = 2.215, meanLifeNeg = 2.043;
+
+    TF1 *constant = new TF1("constant", "1", 0, 1);
+    TF1 *decayTimePosDist = new TF1("decay time pos", "TMath::Exp(-x/[0])", 0, 20);
+    decayTimePosDist->FixParameter(0, meanLifePos);
+    TF1 *decayTimeNegDist = new TF1("decay time neg", "TMath::Exp(-x/[0])", 0, 20);
+    decayTimeNegDist->FixParameter(0, meanLifeNeg);
+
+    Double_t nCounts = 0;
+
+    for(Int_t x = 0; x < totalEvents; x++){
+
+        Double_t muonType = constant->GetRandom(0, 1);
+        Double_t decayTime = (muonType < 1 ? decayTimePosDist : decayTimeNegDist)->GetRandom(0, 20);
+        
+        outFile << "0 0 0 0 0 " << decayTime << " 0" << endl;
+
+    }
+
+    outFile.close();
+
+}
+
 TH1D* readMonteCarlo(TF1* cal, TString inputfile){
 
-    TH1D *histo = new TH1D(inputfile, inputfile, 256, cal->Eval(-0.5), cal->Eval(2047.5));
+    TH1D *histo = new TH1D(inputfile, inputfile, 1024, cal->Eval(-0.5), cal->Eval(2047.5));
 
     ifstream ifs("./Data/" + inputfile + ".txt"); if(!ifs.is_open()){cout << "Error. File " << inputfile << " not found. Exiting...\n"; return NULL;}
 

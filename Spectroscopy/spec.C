@@ -73,9 +73,9 @@ void spec(){
         
         if(dataset.Contains("#")) continue;
 
-        //hCalibration.push_back(readData(dataset, "Mercury", wavelength, peak1, peak2, intTime, 0));
-        //hCalibration.push_back(readData(dataset, "Mercury", wavelength, peak1, peak2, intTime,
-        //    getWavelength(hCalibration.at(hCalibration.size()-1)->GetFunction("fit")->GetParameter(2)) - hCalibration.at(hCalibration.size()-1)->GetFunction("fit")->GetParameter(2)));
+        hCalibration.push_back(readData(dataset, "Mercury", wavelength, peak1, peak2, intTime, 0));
+        hCalibration.push_back(readData(dataset, "Mercury", wavelength, peak1, peak2, intTime,
+            getWavelength(hCalibration.at(hCalibration.size()-1)->GetFunction("fit")->GetParameter(2)) - hCalibration.at(hCalibration.size()-1)->GetFunction("fit")->GetParameter(2)));
                 
     }
 
@@ -86,9 +86,9 @@ void spec(){
         
         if(dataset.Contains("#")) continue;
 
-        //hHydrogen.push_back(readData(dataset, "Hydrogen", wavelength, peak1, peak2, intTime, 0));
-        //hHydrogen.push_back(readData(dataset, "Deuterium", wavelength, peak1, peak2, intTime,
-        //    getWavelength(hHydrogen.at(hHydrogen.size()-1)->GetFunction("fit")->GetParameter(2)) - hHydrogen.at(hHydrogen.size()-1)->GetFunction("fit")->GetParameter(2)));
+        hHydrogen.push_back(readData(dataset, "Hydrogen", wavelength, peak1, peak2, intTime, 0));
+        hHydrogen.push_back(readData(dataset, "Deuterium", wavelength, peak1, peak2, intTime,
+            getWavelength(hHydrogen.at(hHydrogen.size()-1)->GetFunction("fit")->GetParameter(2)) - hHydrogen.at(hHydrogen.size()-1)->GetFunction("fit")->GetParameter(2)));
                 
     }
 
@@ -99,7 +99,7 @@ void spec(){
         
         if(dataset.Contains("#")) continue;
 
-        //hDeuterium.push_back(readData(dataset, "Deuterium", wavelength, peak1, peak2, intTime, true));
+        hDeuterium.push_back(readData(dataset, "Deuterium", wavelength, peak1, peak2, intTime, true));
                 
     }
 
@@ -128,13 +128,13 @@ void spec(){
 
 
     for(UInt_t x = 0; x < hCalibration.size(); x++){
-        //histogram(hCalibration.at(x), hCalibration.at(x)->GetTitle(), can, "", "", TString::Format("Calibration%1i", x));
+        histogram(hCalibration.at(x), hCalibration.at(x)->GetTitle(), can, "", "", TString::Format("Calibration%1i", x));
     }
     for(UInt_t x = 0; x < hHydrogen.size(); x++){
-        //histogram(hHydrogen.at(x), hHydrogen.at(x)->GetTitle(), can, "", "", TString::Format("Hydrogen%1i", x));
+        histogram(hHydrogen.at(x), hHydrogen.at(x)->GetTitle(), can, "", "", TString::Format("Hydrogen%1i", x));
     }
     for(UInt_t x = 0; x < hDeuterium.size(); x++){
-        //histogram(hDeuterium.at(x), hDeuterium.at(x)->GetTitle(), can, "", "", TString::Format("Deuterium%1i", x));
+        histogram(hDeuterium.at(x), hDeuterium.at(x)->GetTitle(), can, "", "", TString::Format("Deuterium%1i", x));
     }
     for(UInt_t x = 0; x < hSodium.size(); x++){
         histogram(hSodium.at(x), hSodium.at(x)->GetTitle(), can, "", "", TString::Format("Sodium%1i", x));
@@ -295,13 +295,13 @@ TH1D* readData(TString dataset, TString name, TString wavel, Double_t peak1, Dou
     gStyle->SetTitleSize(0.070, "t");
     if(peak2 == 0.) histo->SetTitle(name + TString::Format(" %4.2f #AA", f->GetParameter(2)));
     else histo->SetTitle(name + TString::Format(" %4.2f / %4.2f #AA", f->GetParameter(2), f->GetParameter(6)));
-    histo->SetTitle("Sodium 5890.522 / 5890.567 #AA");
+    //histo->SetTitle("Sodium 5890.522 / 5890.567 #AA");
     cout << shift << endl;
 
     f->SetLineColor(kBlue);
     f->SetLineWidth(4);
     cout << "Fitting " << name << endl;
-    histo->Fit(f, "ME0");
+    histo->Fit(f, "ME");
 
     return histo;
 
@@ -516,7 +516,7 @@ void histogram(TH1D *histoData, const TString histName, TCanvas *can, const TStr
     //leg->AddEntry(f, "Double Voigtian fit","l");
     
     histoData->Draw("E1");
-    leg->Draw("same");
+    //leg->Draw("same");
 
     // // add axis labels
     // histoData->GetXaxis()->SetTitle(xTitle);
