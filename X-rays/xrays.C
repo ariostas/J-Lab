@@ -138,76 +138,80 @@ void xrays(){
     //     histogram(tempHist, "Data", can, "Decay energy", "Counts", TString::Format("Bremsstrahlung_%i_%s", x, brem.at(x).Data()), "line log");
     // }
 
-    // for(Int_t x=0; x<attenuation.size(); x++){
-    //     Double_t n[nData.at(x)], nError[nData.at(x)], integ[nData.at(x)], integError[nData.at(x)];
-    //     for(Int_t y=1; y<=nData.at(x); y++){
-    //         TH1D *tempHist = readFile("silver_11feb_"+attenuation.at(x)+TString::Format("_%i",y), calib);
-    //         histogram(tempHist, "Data", can, "Decay energy", "Counts", "Attenuation_"+attenuation.at(x)+TString::Format("_%i",y), "dot log");
-    //         n[y-1] = y;
-    //         nError[y-1] = 0;
-    //         integ[y-1] = tempHist->Integral(850, 1150); 
-    //         integError[y-1] = Sqrt(tempHist->Integral(850, 1150));
-    //     }
-    //     TGraphErrors *tempgraph = new TGraphErrors(nData.at(x), n, integ, nError, integError);
-    //     graph(tempgraph, "Attenuation "+attenuation.at(x), can, "Number of sheets", "Counts", "Plot_"+attenuation.at(x));
-    // }
+    for(Int_t x=0; x<attenuation.size(); x++){
+        Double_t n[nData.at(x)], nError[nData.at(x)], integ[nData.at(x)], integError[nData.at(x)];
+        for(Int_t y=1; y<=nData.at(x); y++){
+            TH1D *tempHist = readFile("silver_11feb_"+attenuation.at(x)+TString::Format("_%i",y));
+            histogram(tempHist, "Data", can, "Decay energy", "Counts", "Attenuation_"+attenuation.at(x)+TString::Format("_%i",y), "dot log");
+            n[y-1] = y*0.0009218;
+            nError[y-1] = y*0.00000045;
+            integ[y-1] = tempHist->Integral(870, 1120); 
+            integError[y-1] = Sqrt(tempHist->Integral(870, 1120));
+        }
+        TGraphErrors *tempgraph = new TGraphErrors(nData.at(x), n, integ, nError, integError);
+        graph(tempgraph, "Silver x-rays attenuated by alloy", can, "Thickness (m)", "Counts", "Plot_"+attenuation.at(x));
+    }
 
     // for(Int_t x=0; x<random.size(); x++){
     //     TH1D *tempHist = readFile(random.at(x));
     //     histogram(tempHist, "Bremsstrahlung x-rays", can, "MCA bin", "Counts", TString::Format("Random_%i_%s", x, random.at(x).Data()), "dot log");
     // }
+    return;
 
     vector<TH1D*> histos;
     histos.push_back(readFile(spectrum.at(0)+"_9feb_final", calib));
-    // fitHist(histos.at(0), "1", 58.5, 60.5, 1e4, 0.2);
+    fitHist(histos.at(0), "1", 58.5, 60.5, 1e4, 0.2);
     // fitHist(histos.at(0), "3", 7, 11, 1e3, 0.2);
-    fitHist(histos.at(0), "4", 7, 11, 1e3, 0.2);
+    // fitHist(histos.at(0), "4", 7, 11, 1e3, 0.2);
 
     histos.push_back(readFile(spectrum.at(1)+"_9feb_final", calib));
-    fitHist(histos.at(1), "1", 3, 5, 1e3, 0.1);
-    fitHist(histos.at(1), "2", 5, 7, 1e3, 0.1);
-    fitHist(histos.at(1), "3", 13, 15, 1e4, 0.2);
-    fitHist(histos.at(1), "4", 15.1, 16.5, 1e4, 0.3);
+    // fitHist(histos.at(1), "1", 3, 5, 1e3, 0.1);
+    // fitHist(histos.at(1), "2", 5, 7, 1e3, 0.1);
+    fitHist(histos.at(1), "3", 12.4, 14.15, 1e4, 0.2);
+    fitHist(histos.at(1), "4", 14.4, 15.9, 1e4, 0.3);
 
     histos.push_back(readFile(spectrum.at(2)+"_9feb_final", calib));
-    fitHist(histos.at(2), "1", 7, 9, 1e4, 0.2);
-    fitHist(histos.at(2), "2", 9, 12, 1e3, 0.2);
-    fitHist(histos.at(2), "3", 17, 19.1, 1e4, 0.2);
-    fitHist(histos.at(2), "4", 19.3, 21.5, 1e4, 0.2);
+    // fitHist(histos.at(2), "1", 7, 9, 1e4, 0.2);
+    // fitHist(histos.at(2), "2", 9, 12, 1e3, 0.2);
+    fitHist(histos.at(2), "3", 16.4, 18.5, 1e5, 0.2);
+    fitHist(histos.at(2), "4", 18.9, 20.9, 1e4, 0.2);
 
     cout << "silver" << endl;
     histos.push_back(readFile(spectrum.at(3)+"_9feb_final", calib));
-    fitHist(histos.at(3), "1", 12, 14, 1e4, 0.2);
-    fitHist(histos.at(3), "2", 15, 17, 1e4, 0.2);
-    fitHist(histos.at(3), "3", 21, 24.1, 1e4, 0.2);
-    fitHist(histos.at(3), "4", 24.4, 27, 1e4, 0.2);
+    // fitHist(histos.at(3), "1", 12, 14, 1e4, 0.2);
+    // fitHist(histos.at(3), "2", 15, 17, 1e4, 0.2);
+    fitHist(histos.at(3), "3", 20.6, 23.6, 1e5, 0.2);
+    fitHist(histos.at(3), "4", 24.0, 26.4, 1e4, 0.2);
 
     cout << "barium" << endl;
     histos.push_back(readFile(spectrum.at(4)+"_9feb_final", calib));
-    fitHist(histos.at(4), "1", 21, 24.5, 1e4, 0.2);
-    fitHist(histos.at(4), "2", 24.5, 28, 1e3, 0.2);
-    fitHist(histos.at(4), "3", 31, 34.3, 1e5, 0.2);
-    fitHist(histos.at(4), "4", 35.4, 39, 1e4, 0.2);
+    // fitHist(histos.at(4), "1", 21, 24.5, 1e4, 0.2);
+    // fitHist(histos.at(4), "2", 24.5, 28, 1e3, 0.2);
+    fitHist(histos.at(4), "3", 30.6, 33.8, 1e5, 0.2);
+    fitHist(histos.at(4), "4", 35.0, 36.8, 1e4, 0.2);
 
     cout << "terbum" << endl;
     histos.push_back(readFile(spectrum.at(5)+"_9feb_final", calib));
-    fitHist(histos.at(5), "1", 32, 36, 1e4, 0.2);
-    fitHist(histos.at(5), "3", 43, 46.1, 1e5, 0.1);
-    fitHist(histos.at(5), "4", 48, 51.3, 1e4, 0.2);
+    // fitHist(histos.at(5), "1", 32, 36, 1e4, 0.2);
+    fitHist(histos.at(5), "3", 44.2, 45.7, 1e5, 0.1);
+    fitHist(histos.at(5), "4", 49.0, 51.0, 1e4, 0.2);
 
-    for(UInt_t x = 0; x < histos.size(); x++){
-        histogram(histos.at(x), spectrum.at(x), can, "Energy (keV)", "Counts", TString::Format("Spectrum_%i_%s", x, spectrum.at(x).Data()), "dot log");
+    for(UInt_t x = 3; x < 2; x++){
+        histogram(histos.at(x), "Silver", can, "Energy (keV)", "Counts", TString::Format("Spectrum_%i_%s", x, spectrum.at(x).Data()), "dot ");
 
     }
 
-    can->Clear();
+    // can->Clear();
 
     TString moseleyNames[4] = {"Reflection 1", "Reflection 2", "K#alpha lines", "K#beta lines"};
+    TString moseleyNames2[4] = {"Reflection 1", "Reflection 2", "kalpha", "kbeta"};
 
     Double_t zNumbers[6] = {29., 37., 42., 47., 56., 65.};
     Double_t zErrors[6] = {0, 0, 0, 0, 0, 0};
 
-    for(Int_t x = 1; x <= 4; x++){
+    TFile file("moseley.root","recreate");
+
+    for(Int_t x = 1; x <= 0; x++){
 
         Double_t sqrtEnergies[6], zNum[6], eErrors[6];
         Int_t el = 0;
@@ -224,6 +228,7 @@ void xrays(){
             // if(i==0) eErrors[el] = (fit->GetParError(2)+fit->GetParameter(3))/Sqrt(2.*fit->GetParameter(2));
             eErrors[el] = Sqrt(calibErrorSquared(calib, calibError, fit->GetParameter(2))+fit->GetParError(2)*fit->GetParError(2))/Sqrt(2.*fit->GetParameter(2));
             // if(i==0) eErrors[el] = Sqrt(fit->GetParError(2)*fit->GetParError(2))/Sqrt(2.*fit->GetParameter(2));
+            // eErrors[el] = (Sqrt(calibErrorSquared(calib, calibError, fit->GetParameter(2)))+fit->GetParError(2)*fit->GetParError(2))/Sqrt(2.*fit->GetParameter(2));
 
 
             cout << "Z: " << zNum[el] << ", line: " << x << ". E = " << fit->GetParameter(2) << " +- " << Sqrt(0.0569749*0.0569749+fit->GetParError(2)*fit->GetParError(2)+fit->GetParameter(3)*fit->GetParameter(3)) << endl;
@@ -235,9 +240,12 @@ void xrays(){
         }
 
         TGraphErrors *moseley = new TGraphErrors(el, zNum, sqrtEnergies, zErrors, eErrors);
+        moseley->SetName(moseleyNames2[x-1]);
         graph(moseley, moseleyNames[x-1], can, "Atomic number Z", "#sqrt{E} (#sqrt{keV})", TString::Format("Moseley_%i",x));
+        moseley->Write();
 
     }
+    file.Close();
 
 }
 
@@ -303,9 +311,11 @@ TF1* calibration(){
 
     realE[0] = 59.541; bin[0] = 809.611;
     //realE[1] = 8.904; bin[1] = 111.332;
-    realE[1] = 8.048; bin[1] = 111.332;
-    realEError[0] = 0.001; binError[0] = 1;
-    realEError[1] = 0.001; binError[1] = 1;
+    realE[1] = 8.226; bin[1] = 111.332;
+    realEError[0] = 0.001; binError[0] = 0.4;
+    realEError[1] = 0.001; binError[1] = 1.4;
+    // realEError[0] = 0.001; binError[0] = 0.0242421;
+    // realEError[1] = 0.001; binError[1] = 0.0786270;
 
     TGraphErrors *cal = new TGraphErrors(2, bin, realE, binError, realEError);
     TF1 *f = new TF1("fit", "[0]+[1]*x");
@@ -331,7 +341,8 @@ void graph(TGraph *graph, const TString graphName, TCanvas *can, const TString x
     gStyle->SetOptStat(kFALSE);
     //gStyle->SetOptFit(1100);
     gPad->SetLogy(0);
-    gStyle->SetStatFormat("6.2g");
+    gStyle->SetStatFormat("6.3f");
+    gStyle->SetFitFormat("6.2f");
 
     if(!graph){
         cout << "Error: Graph \"" << graphName << "\" not defined" << endl;
@@ -343,11 +354,21 @@ void graph(TGraph *graph, const TString graphName, TCanvas *can, const TString x
     graph->SetMarkerSize(1.5);
     graph->SetMarkerColor(kRed);
     graph->SetLineColor(kBlack);
-    TF1 *f = new TF1(graphName, "[1]*x-[0]");
-    f->SetParameter(0, 0);
-    f->SetParameter(1, 1);
-    f->SetParName(0, "C#sigma");
-    f->SetParName(1, "C");
+    // TF1 *f = new TF1("fit", "[1]*x-[0]");
+    // f->SetParameter(0, 0);
+    // f->SetParameter(1, 1);
+    // f->SetParName(0, "#sqrt{A}b");
+    // f->SetParName(1, "#sqrt{A}");
+    // f->SetLineColor(kBlue);
+    // f->SetLineWidth(4);
+    // graph->Fit(f, "MEF");
+    TF1 *f = new TF1("fit", "[0]+[1]*TMath::Exp(-[2]*x)");
+    f->SetParameter(0, 1000);
+    f->SetParameter(1, 10000);
+    f->SetParameter(2, 100);
+    f->SetParName(0, "C");
+    f->SetParName(1, "I_{0}");
+    f->SetParName(2, "#mu");
     f->SetLineColor(kBlue);
     f->SetLineWidth(4);
     graph->Fit(f, "MEF");
@@ -356,10 +377,10 @@ void graph(TGraph *graph, const TString graphName, TCanvas *can, const TString x
     TLegend *leg = new TLegend(0.655,0.675,0.885,0.875);
     leg->SetTextSize(0.055);
     leg->AddEntry(graph, "Data","lep");
-    leg->AddEntry(f, "Linear fit","l");
+    leg->AddEntry(f, "Exponential fit","l");
     
     graph->Draw("ap");
-    // leg->Draw("same");
+    leg->Draw("same");
 
     // add axis labels
     graph->GetXaxis()->SetTitle(xTitle);
@@ -424,8 +445,9 @@ void histogram(TH1D *histoData, const TString histName, TCanvas *can, const TStr
 
     gPad->SetLogy( (type.Contains("log") ? 1 : 0) );
     gStyle->SetOptFit(kFALSE);
+    gStyle->SetOptStat(kFALSE);
     gStyle->SetStatFormat("6.2g");
-    gStyle->SetFitFormat("4.3G");
+    gStyle->SetFitFormat("4.3f");
 
     if(!histoData) return;
 
@@ -456,7 +478,7 @@ void histogram(TH1D *histoData, const TString histName, TCanvas *can, const TStr
     leg->AddEntry(f, "Voigtian fits","l");
     
     histoData->Draw((type.Contains("dot") ? "E1" : ""));
-    // leg->Draw("same");
+    leg->Draw("same");
 
     // add axis labels
     histoData->GetXaxis()->SetTitle(xTitle);
