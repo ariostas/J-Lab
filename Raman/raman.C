@@ -19,6 +19,7 @@
 #include <TLatex.h>
 #include <TGraph.h>
 #include <TGraphErrors.h>
+#include "TSpectrum.h"
 
 #endif
 
@@ -29,6 +30,7 @@ using namespace std;
 void histogram(TH1D *histoData, const TString histName, TCanvas *can, const TString xTitle, const TString yTitle, const TString name, const TString type);
 void histogram(TH1D*, TH1D*, const TString, TCanvas*, const TString, const TString, const TString);
 TH1D* readData(TString, TString, Double_t, Double_t);
+void findPeaks(TH1D*);
 
 /*
  * MAIN FUNCTION
@@ -43,17 +45,30 @@ void raman(){
     TH1D *oxygen1 = readData("oxygen_0psi_25cm_mar15", "Oxygen", 25, 0);
     TH1D *oxygen2 = readData("oxygen_15psi_25cm_mar15", "Oxygen", 25, 0);
     TH1D *oxygen3 = readData("oxygen_30psi_25cm_mar15", "Oxygen", 25, 0);
+    TH1D *oxygen4 = readData("oxygen_0psi_25cm_mar24", "Oxygen", 25, 0);
 
     TH1D *nitrogen1 = readData("nitrogen_15psi_25cm_mar17", "Nitrogen", 25, 0);
     TH1D *nitrogen2 = readData("nitrogen_30psi_5cm_mar17", "Nitrogen", 5, 0);
     TH1D *nitrogen3 = readData("test_117", "Nitrogen", 5, 0);
 
-    TH1D *carbondio = readData("test_116", "CO2", 5, 0);
+    TH1D *carbondio = readData("co2_0psi_5cm_mar24", "CO2", 5, 0);
+
+    findPeaks(oxygen1);
+    findPeaks(oxygen2);
+    findPeaks(oxygen3);
+    findPeaks(oxygen4);
+
+    findPeaks(nitrogen1);
+    findPeaks(nitrogen2);
+    findPeaks(nitrogen3);
+
+    findPeaks(carbondio);
 
     TCanvas *can = new TCanvas("Canvas", "Canvas", 1600, 900);
     histogram(oxygen1, "Oxygen 1 atm", can, "#Delta k (cm^{-1})", "Photon count", "oxygen1", "line");
     histogram(oxygen2, "Oxygen 2 atm", can, "#Delta k (cm^{-1})", "Photon count", "oxygen2", "line");
     histogram(oxygen3, "Oxygen 3 atm", can, "#Delta k (cm^{-1})", "Photon count", "oxygen3", "line");
+    histogram(oxygen4, "Oxygen 1 atm (fixed slit)", can, "#Delta k (cm^{-1})", "Photon count", "oxygen4", "line");
 
     histogram(nitrogen1, "Nitrogen 1 atm", can, "#Delta k (cm^{-1})", "Photon count", "nitrogen1", "line");
     histogram(nitrogen2, "Nitrogen 2 atm", can, "#Delta k (cm^{-1})", "Photon count", "nitrogen2", "line");
@@ -105,7 +120,7 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
     
     while(ifs >> entry >> intensity){
         
-        for(Int_t x = 0; (x< intensity*1750 && x<7000); x++){
+        for(Int_t x = 0; x< intensity*1829; x++){
             histo->Fill((nBins/2.-entry+offset)*speed/60);
         }
 
@@ -155,6 +170,30 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
     // histo->Fit(f, "ME");
 
     return histo;
+
+}
+
+void findPeaks(TH1D* hist){
+
+    TSpectrum *s = new TSpectrum(50);
+    Int_t nfound = s->Search(hist,10,"",0.01);
+    TH1 *hb = s->Background(hist,20,"same");
+    // if (hb) c1->Update();
+
+    TF1 *fline = new TF1("fline","pol1",0,1000);
+    hist->Fit("fline","qn");
+
+    Int_t npeaks = 0;
+    Float_t *xpeaks = s->GetPositionX();
+    for (Int_t p=0;p<nfound;p++) {
+        Double_t xp = xpeaks[p];
+        Int_t bin = hist->GetXaxis()->FindBin(xp);
+        Double_t yp = hist->GetBinContent(bin);
+        if (yp-TMath::Sqrt(yp) < fline->Eval(xp)) continue;
+        npeaks++;
+        printf("%s: peak %i at position %4.2f\n",hist->GetTitle(), p, xp);
+    }
+    cout << endl;
 
 }
 
