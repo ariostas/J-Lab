@@ -42,7 +42,7 @@ void raman(){
     
     cout << "\n\nStarting process...\n\n";
 
-    TH1D *oxygen1 = readData("oxygen_0psi_25cm_mar15", "Oxygen", 25, 0);
+    TH1D *oxygen1 = readData("oxygen_0psi_25cm_mar15", "Oxygen", 25, 180.2);
     TH1D *oxygen2 = readData("oxygen_15psi_25cm_mar15", "Oxygen", 25, 0);
     TH1D *oxygen3 = readData("oxygen_30psi_25cm_mar15", "Oxygen", 25, 0);
     TH1D *oxygen4 = readData("oxygen_0psi_25cm_mar24", "Oxygen", 25, 0);
@@ -109,8 +109,8 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
     }
     else{
 
-        minHist = -(centralLine+0.5)*speed/120.;
-        maxHist = (nBins-centralLine-0.5)*speed/120.;
+        minHist = -centralLine-0.5*speed/120.;
+        maxHist = -centralLine+(nBins-0.5)*speed/120.;
     }
 
     TH1D *histo = new TH1D(dataset, dataset, nBins, minHist, maxHist);
@@ -121,7 +121,7 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
     while(ifs >> entry >> intensity){
         
         for(Int_t x = 0; x< intensity*1829; x++){
-            histo->Fill((nBins/2.-entry+offset)*speed/60);
+            histo->Fill(-centralLine+(nBins/2.-entry+offset)*speed/60);
         }
 
     }
@@ -181,7 +181,7 @@ void findPeaks(TH1D* hist){
     // if (hb) c1->Update();
 
     TF1 *fline = new TF1("fline","pol1",0,1000);
-    hist->Fit("fline","qn");
+    hist->Fit(fline,"qn");
 
     Int_t npeaks = 0;
     Float_t *xpeaks = s->GetPositionX();
