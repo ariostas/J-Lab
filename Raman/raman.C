@@ -103,14 +103,14 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
 
     if(centralLine == 0){
 
-        minHist = 0;
-        maxHist = (nBins-0.5)*speed/120.;
+        minHist = +0.5*speed/60./2.;
+        maxHist = (nBins+0.5)*speed/60./2.;
 
     }
     else{
 
-        minHist = -centralLine-0.5*speed/120.;
-        maxHist = -centralLine+(nBins-0.5)*speed/120.;
+        minHist = -centralLine+0.5*speed/60./2.;
+        maxHist = -centralLine+(nBins+0.5)*speed/60./2.;
     }
 
     TH1D *histo = new TH1D(dataset, dataset, nBins, minHist, maxHist);
@@ -120,8 +120,8 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
     
     while(ifs >> entry >> intensity){
         
-        for(Int_t x = 0; x< intensity*1829; x++){
-            histo->Fill(-centralLine+(nBins/2.-entry+offset)*speed/60);
+        for(Int_t x = 0; x< intensity*1828.5323; x++){
+            histo->Fill(-centralLine+(nBins/2.-entry+offset)*speed/60.);
         }
 
     }
