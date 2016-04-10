@@ -74,9 +74,9 @@ void raman(){
     // vector<Double_t> peaksOxygen1 (peaksOxygen1Arr, peaksOxygen1Arr + sizeof(peaksOxygen1Arr) / sizeof(double) );
     // fitPeaks(oxygen1, peaksOxygen1, 5.);
 
-    double peaksNitrogenArr[] = {-157.29, -149, -141.41, -133.08, -125.12, -117.08, -108.96, -100.58, -92.83, -85.33, -77.12, -69.08, -60.75, -52.37, -44.58, -36.36, -28.25, -20, 0, 20.00, 28.21, 36.33, 44.29, 52.88, 60.79, 69.00, 77.08, 85.08, 93.04, 101.25, 109.46, 117.00, 125.38, 132.54, 141.38};
+    double peaksNitrogenArr[] = {-173.87, -165.58, -157.29, -149, -141.41, -133.08, -125.12, -117.08, -108.96, -100.58, -92.83, -85.33, -77.12, -69.08, -60.75, -52.37, -44.58, -36.36, -28.25, -20, 0, 20.00, 28.21, 36.33, 44.29, 52.88, 60.79, 69.00, 77.08, 85.08, 93.04, 101.25, 109.46, 117.00, 125.38, 132.54, 141.38, 149.67, 157.96};
     vector<Double_t> peaksNitrogen(peaksNitrogenArr, peaksNitrogenArr + sizeof(peaksNitrogenArr) / sizeof(double) );
-    fitPeaks(nitrogen3, peaksNitrogen, 3.8);
+    fitPeaks(nitrogen3, peaksNitrogen, 3.5);
     printPeaks(nitrogen3);
 
 
@@ -141,8 +141,8 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
     
     while(ifs >> entry >> intensity){
         
-        for(Int_t x = 0; x< intensity*1828.5323; x++){
-            if(intensity*1828.5323 > 2000) intensity = 150./1828.5323;
+        for(Int_t x = 0; x< intensity*1828.5323/2.; x++){
+            if(intensity*1828.5323/2. > 2000) intensity = 150./1828.5323/2.;
             histo->Fill(-centralLine+(nBins/2.-entry+offset)*speed/60.);
         }
 
@@ -156,8 +156,8 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
 
 void findPeaks(TH1D* hist){
 
-    TSpectrum *s = new TSpectrum(50);
-    Int_t nfound = s->Search(hist,10,"",0.01);
+    TSpectrum *s = new TSpectrum(60);
+    Int_t nfound = s->Search(hist,8,"",0.005);
     TH1 *hb = s->Background(hist,20,"same");
     // if (hb) c1->Update();
 
@@ -188,16 +188,41 @@ void fitPeaks(TH1D* histo, vector<Double_t> peaks, Double_t width){
 
     for(UInt_t x = 0; x<peaks.size(); x++){
 
+        Double_t height = histo->GetBinContent(histo->FindBin(peaks.at(x)));
         TF1* f = new TF1(TString::Format("Peak_%i", x), "[0]+[1]*TMath::Voigt(x-[2],[3],[4])");
-        f->SetParameter(0, 200);
-        // f->SetParameter(1, (histo->GetBinContent(histo->FindBin(peaks.at(x))) > 1500 ? 0.01*histo->GetBinContent(histo->FindBin(peaks.at(x))) : 0.1*histo->GetBinContent(histo->FindBin(peaks.at(x)))));
+        if(height > 1500){
+            f->SetParameter(0,  250);
+            f->SetParameter(1,  0.004*height);
+            f->SetParameter(2, peaks.at(x));
+            f->SetParameter(3,  1);
+            f->SetParameter(4, 1);
+        }
+        else if(height > 750){
+            f->SetParameter(0,  180);
+            f->SetParameter(1,  0.004*height);
+            f->SetParameter(2, peaks.at(x));
+            f->SetParameter(3,  1);
+            f->SetParameter(4, 1);
+        }
+        else{
+            f->SetParameter(0,  100);
+            f->SetParameter(1,  0.0025*height);
+            f->SetParameter(2, peaks.at(x));
+            f->SetParameter(3,  1);
+            f->SetParameter(4, 1);
+        }
+        if(Abs(peaks.at(x)) < 5){
+            f->SetParameter(0,  50);
+            f->SetParameter(1,  0.004*height);
+            f->SetParameter(2, peaks.at(x));
+            f->SetParameter(3,  1);
+            f->SetParameter(4, 1);
+        }
+        
+        // f->SetParameter(1, 0.009*histo->GetBinContent(histo->FindBin(peaks.at(x))));
         // f->SetParameter(2, peaks.at(x));
-        // f->SetParameter(3, (histo->GetBinContent(histo->FindBin(peaks.at(x))) > 1500 ? 1 : 2));
-        // f->SetParameter(4, (histo->GetBinContent(histo->FindBin(peaks.at(x))) > 1500 ? 1 : 10));
-        f->SetParameter(1, 0.005*histo->GetBinContent(histo->FindBin(peaks.at(x))));
-        f->SetParameter(2, peaks.at(x));
-        f->SetParameter(3, 1);
-        f->SetParameter(4, 1.);
+        // f->SetParameter(3, 1);
+        // f->SetParameter(4, 1);
 
         histo->Fit(f, "ME+", "", peaks.at(x)-width, peaks.at(x)+width);
 
@@ -223,7 +248,7 @@ void printPeaks(TH1D* histo){
         if(!func) break;
 
         xPeak[x] = func->GetParameter(2);
-        nPeak[x] = x-18;
+        nPeak[x] = x-20;
         xErrorsPeak[x] = func->GetParError(2);
         nErrorsPeak[x] = 0.1;
         npeaks++;
@@ -403,6 +428,8 @@ void histogram(TH1D *histoData1, TH1D *histoData2, const TString histName, TCanv
     can->Update();
 
     can->SaveAs(name + ".png");
+
+
 }
 
 void graph(TGraph *graph, const TString graphName, TCanvas *can, const TString xTitle, const TString yTitle, const TString name){
