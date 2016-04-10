@@ -74,7 +74,7 @@ void raman(){
     // vector<Double_t> peaksOxygen1 (peaksOxygen1Arr, peaksOxygen1Arr + sizeof(peaksOxygen1Arr) / sizeof(double) );
     // fitPeaks(oxygen1, peaksOxygen1, 5.);
 
-    double peaksNitrogenArr[] = {-173.87, -165.58, -157.29, -149, -141.41, -133.08, -125.12, -117.08, -108.96, -100.58, -92.83, -85.33, -77.12, -69.08, -60.75, -52.37, -44.58, -36.36, -28.25, -20, 0, 20.00, 28.21, 36.33, 44.29, 52.88, 60.79, 69.00, 77.08, 85.08, 93.04, 101.25, 109.46, 117.00, 125.38, 132.54, 141.38, 149.67, 157.96};
+    double peaksNitrogenArr[] = {-173.87, -165.58, -157.29, -149, -141.41, -133.08, -125.12, -117.08, -108.96, -100.58, -92.83, -85.33, -77.12, -69.08, -60.75, -52.37, -44.58, -36.36, -28.25, -20, 0, 20.00, 28.21, 36.33, 44.29, 52.88, 60.79, 69.00, 77.08, 85.08, 93.04, 101.25, 109.00, 117.00, 125.38, 132.54, 141.38, 149.67, 157.96};
     vector<Double_t> peaksNitrogen(peaksNitrogenArr, peaksNitrogenArr + sizeof(peaksNitrogenArr) / sizeof(double) );
     fitPeaks(nitrogen3, peaksNitrogen, 3.5);
     printPeaks(nitrogen3);
@@ -240,7 +240,7 @@ void printPeaks(TH1D* histo){
     Double_t yLarge[20], yErrorsLarge[20], ySmall[20], yErrorsSmall[20];
     Int_t nxLarge = 0, nxSmall = 0;
     Double_t xPeak[40], xErrorsPeak[40], nPeak[40], nErrorsPeak[40];
-    Int_t npeaks = 0;
+    Int_t npeaks = 0, central=0;
 
     for(Int_t x = 0; x < 1000; x++){
 
@@ -255,10 +255,10 @@ void printPeaks(TH1D* histo){
 
         if((x%2 == 0) && (Abs(func->GetParameter(2)) > 5.)){
 
-            xLarge[x/2] = func->GetParameter(2);
-            yLarge[x/2] = func->Eval(func->GetParameter(2));
-            xErrorsLarge[x/2] = func->GetParError(2);
-            yErrorsLarge[x/2] = Sqrt(func->Eval(func->GetParameter(2)));
+            xLarge[x/2-central] = func->GetParameter(2);
+            yLarge[x/2-central] = func->Eval(func->GetParameter(2));
+            xErrorsLarge[x/2-central] = func->GetParError(2);
+            yErrorsLarge[x/2-central] = Sqrt(func->Eval(func->GetParameter(2)));
             nxLarge++;
 
         }
@@ -271,6 +271,7 @@ void printPeaks(TH1D* histo){
             nxSmall++;
 
         }
+        if(Abs(func->GetParameter(2)) < 5.) central = 1;
 
         cout << "Peak " << x << " at " << func->GetParameter(2) << " +- " << func->GetParError(2) << " with height " << func->Eval(func->GetParameter(2)) << " +- " << Sqrt(func->Eval(func->GetParameter(2))) << endl;
 
