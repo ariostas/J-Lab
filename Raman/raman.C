@@ -18,6 +18,7 @@
 #include <TText.h>
 #include <TLatex.h>
 #include <TGraph.h>
+#include <TMultiGraph.h>
 #include <TGraphErrors.h>
 #include "TSpectrum.h"
 #include <algorithm>
@@ -35,6 +36,9 @@ void findPeaks(TH1D*);
 void fitPeaks(TH1D*, vector<Double_t>, Double_t);
 void printPeaks(TH1D*);
 void graph(TGraph *graph, const TString graphName, TCanvas *can, const TString xTitle, const TString yTitle, const TString name);
+void graph(TGraph *graph1, TGraph *graph2, const TString graphName, TCanvas *can, const TString xTitle, const TString yTitle, const TString name);
+void computeRotConstant(TCanvas*);
+void computeTemperature(TCanvas*);
 
 TGraphErrors *graphLarge, *graphSmall, *allPeaks;
 
@@ -48,10 +52,12 @@ void raman(){
     
     cout << "\n\nStarting process...\n\n";
 
+    // TFile f("histos.root","recreate");
+
     // TH1D *oxygen1 = readData("oxygen_0psi_25cm_mar15", "Oxygen", 25, 180.2);
     // TH1D *oxygen2 = readData("oxygen_15psi_25cm_mar15", "Oxygen", 25, 218.33);
     // TH1D *oxygen3 = readData("oxygen_30psi_25cm_mar15", "Oxygen", 25, 0);
-    // TH1D *oxygen4 = readData("oxygen_0psi_25cm_mar24", "Oxygen", 25, 0);
+    // TH1D *oxygen4 = readData("oxygen_0psi_25cm_mar24", "Oxygen", 25, 209);
 
     // TH1D *nitrogen1 = readData("nitrogen_15psi_25cm_mar17", "Nitrogen", 25, 0);
     // TH1D *nitrogen2 = readData("nitrogen_30psi_5cm_mar17", "Nitrogen", 5, 0);
@@ -75,6 +81,7 @@ void raman(){
     // fitPeaks(oxygen1, peaksOxygen1, 5.);
 
     double peaksNitrogenArr[] = {-173.87, -165.58, -157.29, -149, -141.41, -133.08, -125.12, -117.08, -108.96, -100.58, -92.83, -85.33, -77.12, -69.08, -60.75, -52.37, -44.58, -36.36, -28.25, -20, 0, 20.00, 28.21, 36.33, 44.29, 52.88, 60.79, 69.00, 77.08, 85.08, 93.04, 101.25, 109.00, 117.00, 125.38, 132.54, 141.38, 149.67, 157.96};
+    // double peaksNitrogenArr[] = {-60.75};
     vector<Double_t> peaksNitrogen(peaksNitrogenArr, peaksNitrogenArr + sizeof(peaksNitrogenArr) / sizeof(double) );
     fitPeaks(nitrogen3, peaksNitrogen, 3.5);
     printPeaks(nitrogen3);
@@ -84,18 +91,21 @@ void raman(){
     // histogram(oxygen1, "Oxygen 1 atm", can, "#Delta k (cm^{-1})", "Photon count", "oxygen1", "line");
     // histogram(oxygen2, "Oxygen 2 atm", can, "#Delta k (cm^{-1})", "Photon count", "oxygen2", "line");
     // histogram(oxygen3, "Oxygen 3 atm", can, "#Delta k (cm^{-1})", "Photon count", "oxygen3", "line");
-    // histogram(oxygen4, "Oxygen 1 atm (fixed slit)", can, "#Delta k (cm^{-1})", "Photon count", "oxygen4", "line");
+    // histogram(oxygen4, "Oxygen", can, "Wavenumber shift #Deltak (cm^{-1})", "Photon count", "oxygen4", "line");
 
     // histogram(nitrogen1, "Nitrogen 1 atm", can, "#Delta k (cm^{-1})", "Photon count", "nitrogen1", "line");
     // histogram(nitrogen2, "Nitrogen 2 atm", can, "#Delta k (cm^{-1})", "Photon count", "nitrogen2", "line");
-    histogram(nitrogen3, "Nitrogen 1 atm (small slits)", can, "#Delta k (cm^{-1})", "Photon count", "nitrogen3", "line");
+    histogram(nitrogen3, "Nitrogen", can, "Wavenumber shift #Deltak (cm^{-1})", "Photon count", "nitrogen3", "line");
 
     // histogram(carbondio, "CO2 1 atm", can, "#Delta k (cm^{-1})", "Photon count", "carbondio", "line");
 
+    computeRotConstant(can);
+    computeTemperature(can);
 
-    graph(graphSmall, "Small peaks", can, "#Delta k (cm^{-1})", "Photon count", "PeaksSmall");
-    graph(graphLarge, "Large peaks", can, "#Delta k (cm^{-1})", "Photon count", "PeaksLarge");
-    graph(allPeaks, "All peaks", can, "#Delta k (cm^{-1})", "J", "PeaksAll");
+    // nitrogen3->Write();
+    // allPeaks->Write();
+    // graphSmall->Write();
+    // graphLarge->Write();
 
 }
 
@@ -142,7 +152,7 @@ TH1D* readData(TString dataset, TString name, Double_t speed, Double_t centralLi
     while(ifs >> entry >> intensity){
         
         for(Int_t x = 0; x< intensity*1828.5323/2.; x++){
-            if(intensity*1828.5323/2. > 2000) intensity = 150./1828.5323/2.;
+            if(intensity*1828.5323 > 2000) intensity = 150./1828.5323;
             histo->Fill(-centralLine+(nBins/2.-entry+offset)*speed/60.);
         }
 
@@ -240,33 +250,35 @@ void printPeaks(TH1D* histo){
     Double_t yLarge[20], yErrorsLarge[20], ySmall[20], yErrorsSmall[20];
     Int_t nxLarge = 0, nxSmall = 0;
     Double_t xPeak[40], xErrorsPeak[40], nPeak[40], nErrorsPeak[40];
-    Int_t npeaks = 0, central=0;
+    Int_t npeaks = 0, central=0, missing=0;
 
     for(Int_t x = 0; x < 1000; x++){
 
         TF1* func = histo->GetFunction(TString::Format("Peak_%i", x));
         if(!func) break;
 
-        xPeak[x] = func->GetParameter(2);
-        nPeak[x] = x-20;
-        xErrorsPeak[x] = func->GetParError(2);
-        nErrorsPeak[x] = 0.1;
+        if(Abs(func->GetParameter(2)) < 0.5) missing++;
+        xPeak[x] = func->GetParameter(2);// + 0.255018;
+        nPeak[x] = x-21+missing;
+        xErrorsPeak[x] = func->GetParError(2) + 0.0230688;
+        nErrorsPeak[x] = 0.2;
         npeaks++;
+        if(missing==1)missing++;
 
         if((x%2 == 0) && (Abs(func->GetParameter(2)) > 5.)){
 
-            xLarge[x/2-central] = func->GetParameter(2);
+            xLarge[x/2-central] = x-21+missing;
             yLarge[x/2-central] = func->Eval(func->GetParameter(2));
-            xErrorsLarge[x/2-central] = func->GetParError(2);
+            xErrorsLarge[x/2-central] = 0.2;
             yErrorsLarge[x/2-central] = Sqrt(func->Eval(func->GetParameter(2)));
             nxLarge++;
 
         }
         else if(x%2 == 1 && Abs(func->GetParameter(2)) > 5){
 
-            xSmall[(x-1)/2] = func->GetParameter(2);
+            xSmall[(x-1)/2] = x-21+missing;
             ySmall[(x-1)/2] = func->Eval(func->GetParameter(2));
-            xErrorsSmall[(x-1)/2] = func->GetParError(2);
+            xErrorsSmall[(x-1)/2] = 0.2;
             yErrorsSmall[(x-1)/2] = Sqrt(func->Eval(func->GetParameter(2)));
             nxSmall++;
 
@@ -279,7 +291,129 @@ void printPeaks(TH1D* histo){
 
     graphLarge = new TGraphErrors(nxLarge, xLarge,  yLarge, xErrorsLarge, yErrorsLarge);
     graphSmall = new TGraphErrors(nxSmall, xSmall,  ySmall, xErrorsSmall, yErrorsSmall);
-    allPeaks = new TGraphErrors(npeaks, xPeak, nPeak, xErrorsPeak, nErrorsPeak);
+    allPeaks = new TGraphErrors(npeaks, nPeak, xPeak, nErrorsPeak, xErrorsPeak);
+
+}
+
+void computeRotConstant(TCanvas *can){
+
+    if(!allPeaks){
+
+        cout << "All peaks graph not defined" << endl;
+        return;
+
+    }
+
+    TF1 *linFit1 = new TF1("linFit1", "[0]+[1]*x");
+    TF1 *linFit2 = new TF1("linFit2", "[0]+[1]*x");
+    linFit1->SetParameter(0, -4);
+    linFit1->SetParameter(1, 8);
+    linFit2->SetParameter(0, 4);
+    linFit2->SetParameter(1, 8);
+    linFit1->SetLineColor(kBlue);
+    linFit2->SetLineColor(kGreen+2);
+    linFit2->SetLineStyle(7);
+
+    linFit1->SetParName(0, "Offset");
+    linFit1->SetParName(1, "Slope");
+    linFit2->SetParName(0, "Offset");
+    linFit2->SetParName(1, "Slope");
+
+    // allPeaks->Fit(linFit1, "ME", "", -21.5, -1.5);
+    allPeaks->Fit(linFit2, "ME+", "", 1.5, 19.5);
+
+    graph(allPeaks, "Nitrogen", can, "Angular momentum #font[12]{l}", "Wavenumber shift #Delta k (cm^{-1})", "PeaksAll");
+
+    Double_t avgRotConst = (linFit1->GetParameter(1)+linFit2->GetParameter(1))/2./4.;
+    Double_t avgRotError = (linFit1->GetParError(1)+linFit2->GetParError(1))/2./4.;
+
+    cout << "The rotational constant from fit is " << avgRotConst << " +- " << avgRotError << " 1/cm" << endl;
+    cout << "Stokes: " << linFit1->GetParameter(1)/4. << " +- " << linFit1->GetParError(1)/4. << endl;
+    cout << "Anti-Stokes: " << linFit2->GetParameter(1)/4. << " +- " << linFit2->GetParError(1)/4. << endl;
+
+    Double_t *waveNumbers = allPeaks->GetY(), *wnErrors = allPeaks->GetEX();
+
+    Double_t sepFirstPeak = (waveNumbers[21]-waveNumbers[19])/2./10.;
+    Double_t sepFirstPeakError = (wnErrors[21]+wnErrors[19])/10.;
+
+    cout << "The rotational constant from central line is " << sepFirstPeak << " +- " << sepFirstPeakError << " 1/cm" << endl;
+
+    Double_t h = 6.62607004e-34, mass = 14*1.660539e-27, c = 299792458, pi = 3.14159265359;
+
+    Double_t radius = Sqrt(h/(16*pi*pi*mass*avgRotConst*100*c));
+    Double_t radiusError = avgRotError*avgRotError*h/(16*pi*pi*mass*100*c)*0.5*0.5/(avgRotConst*avgRotConst*avgRotConst);
+    radiusError = Sqrt(radiusError);
+    cout << "Radius is " << radius*1e12 << " +- " << radiusError*1e12 << " pm" << endl;
+
+    Double_t radiusTemp = Sqrt(h/(16*pi*pi*mass*linFit2->GetParameter(1)/4.*100*c));
+    Double_t radiusErrorTemp = linFit2->GetParError(1)/4.*linFit2->GetParError(1)/4.*h/(16*pi*pi*mass*100*c)*0.5*0.5/(linFit2->GetParameter(1)/4.*linFit2->GetParameter(1)/4.*linFit2->GetParameter(1)/4.);
+    radiusErrorTemp = Sqrt(radiusErrorTemp);
+
+    cout << "temp: " << radiusTemp*1e12 << " +- " << radiusErrorTemp*1e12 << endl;
+}
+
+void computeTemperature(TCanvas *can){
+
+    if(!graphLarge || !graphSmall){
+
+        cout << "Large or small graph not defined" << endl;
+        return;
+
+    }
+
+    TF1 *fitLarge = new TF1("fitLarge", "[0]+[1]*(2*TMath::Abs(x)+1)*TMath::Exp(-[2]*TMath::Abs(x)*(TMath::Abs(x)+1))");
+    fitLarge->SetParameter(0, 450);
+    fitLarge->SetParameter(1, 250);
+    fitLarge->SetParameter(2, 0.011);
+    fitLarge->SetLineColor(kBlue);
+    fitLarge->SetParName(0, "Offset");
+    fitLarge->SetParName(1, "Normalization");
+    fitLarge->SetParName(2, "Decay parameter");
+
+    TF1 *fitSmall = new TF1("fitSmall", "[0]+[1]*(2*TMath::Abs(x)+1)*TMath::Exp(-[2]*TMath::Abs(x)*(TMath::Abs(x)+1))");
+    fitSmall->SetParameter(0, 450);
+    fitSmall->SetParameter(1, 130);
+    fitSmall->SetParameter(2, 0.011);
+    fitSmall->SetLineColor(kBlue);
+    fitSmall->SetParName(0, "Offset");
+    fitSmall->SetParName(1, "Normalization");
+    fitSmall->SetParName(2, "Decay parameter");
+
+    // graphSmall->Fit(fitSmall, "ME", "", -21.5, -0.5);
+    // graphLarge->Fit(fitLarge, "ME", "", -21.5, -0.5);
+    graphSmall->Fit(fitSmall, "ME", "", 0.5, 21.5);
+    graphLarge->Fit(fitLarge, "ME", "", 0.5, 21.5);
+
+    // graph(graphSmall, "Small peaks", can, "Wavenumber shift #Delta k (cm^{-1})", "Photon count", "PeaksSmall");
+    // graph(graphLarge, "Large peaks", can, "Wavenumber shift #Delta k (cm^{-1})", "Photon count", "PeaksLarge");
+    graph(graphSmall, graphLarge, "Nitrogen", can, "Wavenumber shift #Delta k (cm^{-1})", "Photon count", "Temperature");
+
+    Double_t c = 299792458, KB = 1.38064852e-23, h = 6.62607004e-34, rotConst = 201.825, sigmaRot = 1.70133, sigmaB = fitSmall->GetParError(2);
+
+    Double_t temperature1 = h*c*rotConst/(KB*fitSmall->GetParameter(2));
+    Double_t temperature2 = h*c*rotConst/(KB*fitLarge->GetParameter(2));
+
+    Double_t B1 = fitSmall->GetParameter(2);
+    Double_t B2 = fitLarge->GetParameter(2);
+
+    Double_t temp1Error = sigmaB*sigmaB*h*h*c*c*rotConst*rotConst/(KB*KB*B1*B1*B1*B1)+sigmaRot*sigmaRot*h*h*c*c/(KB*KB*B1*B1);
+    Double_t temp2Error = sigmaB*sigmaB*h*h*c*c*rotConst*rotConst/(KB*KB*B2*B2*B2*B2)+sigmaRot*sigmaRot*h*h*c*c/(KB*KB*B2*B2);
+    temp1Error = Sqrt(temp1Error);
+    temp2Error = Sqrt(temp2Error);
+
+    cout << "Temperature from small peaks is " << temperature1 << " +- " << temp1Error << " K and from the large peaks is " << temperature2 << " +- " << temp2Error << " K" << endl;
+
+    Double_t nuclearSpin = fitLarge->GetParameter(1)/fitSmall->GetParameter(1);
+    Double_t spinError = (fitLarge->GetParError(1))*(fitLarge->GetParError(1))/((fitSmall->GetParameter(1))*(fitSmall->GetParameter(1)))+(fitSmall->GetParError(1))*(fitSmall->GetParError(1))*(fitLarge->GetParameter(1))*(fitLarge->GetParameter(1))/((fitSmall->GetParameter(1))*(fitSmall->GetParameter(1))*(fitSmall->GetParameter(1))*(fitSmall->GetParameter(1)));
+    spinError = Sqrt(spinError);
+    cout << "The nuclear ratio is " << nuclearSpin << " +- " << spinError << endl;
+    cout << "The nuclear spin is " << 1/(nuclearSpin-1.) << " +- " << spinError/((nuclearSpin-1.)*(nuclearSpin-1.)) << endl;
+
+    Double_t nuclearSpinFixed = (2958.76-450)/(1731.87-450);
+    Double_t spinErrorFixed = (2958.76-450)/(1731.87-450)/(1731.87-450)+(1731.87-450)*(2958.76-450)*(2958.76-450)/(1731.87-450)/(1731.87-450)/(1731.87-450)/(1731.87-450);
+    spinErrorFixed = Sqrt(spinErrorFixed);
+    cout << "The fixed nuclear ratio is " << nuclearSpinFixed << " +- " << spinErrorFixed << endl;
+    cout << "The fixed nuclear spin is " << 1/(nuclearSpinFixed-1.) << " +- " << spinErrorFixed/((nuclearSpinFixed-1.)*(nuclearSpinFixed-1.)) << endl;
 
 }
 
@@ -290,20 +424,22 @@ void printPeaks(TH1D* histo){
 void histogram(TH1D *histoData, const TString histName, TCanvas *can, const TString xTitle, const TString yTitle, const TString name, const TString type){
 
     gPad->SetLogy( (type.Contains("log") ? 1 : 0) );
-    gStyle->SetOptFit(kFALSE);
+    // gStyle->SetOptFit(kFALSE);
+    gStyle->SetOptFit(1100);
     gStyle->SetOptStat(kFALSE);
     gStyle->SetStatFormat("6.2g");
     gStyle->SetFitFormat("4.3f");
 
     if(!histoData) return;
 
-    // TF1 *f = histoData->GetFunction("4");
+    // TF1 *f = histoData->GetFunction("Peak_0");
 
     if(type.Contains("dot")){
         histoData->SetLineWidth(1);
         histoData->SetMarkerStyle(20);
         histoData->SetMarkerSize(0.6);
         histoData->SetMarkerColor(kRed);
+        // histoData->SetMarkerColor(kBlue);
         histoData->SetLineColor(kBlack);
         // f->SetLineColor(kBlue);
         // f->SetLineWidth(4);
@@ -451,36 +587,40 @@ void graph(TGraph *graph, const TString graphName, TCanvas *can, const TString x
     graph->SetMarkerColor(kRed);
     graph->SetLineColor(kBlack);
     // TF1 *f = new TF1(graphName, "[0]+[1]*TMath::Power(TMath::BesselJ1([2]*x-[3])*TMath::BesselJ1([2]*x-[3])/(([2]*x-[3])*([2]*x-[3])),0.5)");
-    TF1 *f = new TF1(graphName, "[0]+[1]/TMath::Log([4]*TMath::BesselJ1([2]*x-[3])*TMath::BesselJ1([2]*x-[3])/(([2]*x-[3])*([2]*x-[3])) + [5])");
-    f->SetParameter(0, 250);
-    f->SetParameter(1, 100);
-    f->SetParameter(2, 0.395);
-    f->SetParameter(3, 1);
-    f->SetParameter(4, 10000);
-    f->SetParameter(5, 100);
-    f->SetParName(0, "Offset");
-    f->SetParName(1, "Peak intensity");
-    f->SetParName(2, "Aperture");
-    f->SetParName(3, "Center value");
-    f->SetParName(4, "Amp");
-    f->SetParLimits(0, 100, 300);
-    f->SetParLimits(1, 10, 100);
-    f->SetParLimits(2, 0.1, 1);
-    f->SetParLimits(3, -0.2, 2);
-    f->SetParLimits(4, 50, 10000);
-    f->SetParLimits(5, 1, 10000);
-    f->SetLineColor(kBlue);
-    f->SetLineWidth(4);
+    // TF1 *f = new TF1(graphName, "[0]+[1]/TMath::Log([4]*TMath::BesselJ1([2]*x-[3])*TMath::BesselJ1([2]*x-[3])/(([2]*x-[3])*([2]*x-[3])) + [5])");
+    // f->SetParameter(0, 250);
+    // f->SetParameter(1, 100);
+    // f->SetParameter(2, 0.395);
+    // f->SetParameter(3, 1);
+    // f->SetParameter(4, 10000);
+    // f->SetParameter(5, 100);
+    // f->SetParName(0, "Offset");
+    // f->SetParName(1, "Peak intensity");
+    // f->SetParName(2, "Aperture");
+    // f->SetParName(3, "Center value");
+    // f->SetParName(4, "Amp");
+    // f->SetParLimits(0, 100, 300);
+    // f->SetParLimits(1, 10, 100);
+    // f->SetParLimits(2, 0.1, 1);
+    // f->SetParLimits(3, -0.2, 2);
+    // f->SetParLimits(4, 50, 10000);
+    // f->SetParLimits(5, 1, 10000);
+    // f->SetLineColor(kBlue);
+    // f->SetLineWidth(4);
     //graph->Fit(f, "ME");
+
+    // TF1 *f1 = graph->GetFunction("linFit1");
+    // TF1 *f2 = graph->GetFunction("linFit2");
 
     gStyle->SetLegendBorderSize(0);
     TLegend *leg = new TLegend(0.655,0.675,0.885,0.875);
     leg->SetTextSize(0.055);
     leg->AddEntry(graph, "Data","lep");
-    //leg->AddEntry(f, "Airy disk fit","l");
+    // leg->AddEntry(f1, "Stokes linear fit","l");
+    // leg->AddEntry(f2, "Anti-Stokes linear fit","l");
     
     graph->Draw("ap");
-    //leg->Draw("same");
+    // leg->Draw("same");
 
     // add axis labels
     graph->GetXaxis()->SetTitle(xTitle);
@@ -497,6 +637,77 @@ void graph(TGraph *graph, const TString graphName, TCanvas *can, const TString x
     gStyle->SetTitleSize(0.08, "t");
     graph->SetTitle(graphName);
     can->Update();
+
+    can->SaveAs(name + ".png");
+
+    //can->Clear();
+}
+
+void graph(TGraph *graph1, TGraph *graph2, const TString graphName, TCanvas *can, const TString xTitle, const TString yTitle, const TString name){
+
+    //gStyle->SetOptStat(2210);
+    gStyle->SetOptFit(1111);
+    gStyle->SetOptStat(kFALSE);
+    //gStyle->SetOptFit(1100);
+
+    if(!graph1 || !graph2){
+        cout << "Error: Graph \"" << graphName << "\" not defined" << endl;
+        return;
+    }
+
+    graph1->SetLineWidth(2);
+    graph1->SetMarkerStyle(20);
+    graph1->SetMarkerSize(1.5);
+    graph1->SetMarkerColor(kRed);
+    graph1->SetLineColor(kBlack);
+    graph2->SetLineWidth(2);
+    graph2->SetMarkerStyle(20);
+    graph2->SetMarkerSize(1.5);
+    graph2->SetMarkerColor(kRed);
+    graph2->SetLineColor(kBlack);
+
+    TF1 *f1 = graph1->GetFunction("fitSmall");
+    TF1 *f2 = graph2->GetFunction("fitLarge");
+
+    f1->SetLineColor(kBlue);
+    f1->SetLineWidth(4);
+    f2->SetLineColor(kGreen+1);
+    f2->SetLineWidth(4);
+    f2->SetLineStyle(9);
+
+    gStyle->SetLegendBorderSize(0);
+    TLegend *leg = new TLegend(0.655,0.675,0.885,0.875);
+    leg->SetTextSize(0.055);
+    leg->AddEntry(graph1, "Data","lep");
+    leg->AddEntry(f1, "Small Stokes fit","l");
+    leg->AddEntry(f2, "Large Stokes fit","l");
+
+    TMultiGraph *mg = new TMultiGraph();
+    mg->SetTitle("Nitrogen");
+
+    mg->Add(graph1);
+    mg->Add(graph2);
+    
+    // graph1->Draw("ap");
+    // graph2->Draw("same ap");
+    mg->Draw("ap");
+    leg->Draw("same");
+
+    // add axis labels
+    mg->GetXaxis()->SetTitle(xTitle);
+    mg->GetXaxis()->CenterTitle();
+    mg->GetXaxis()->SetTitleSize(0.055);
+    mg->GetXaxis()->SetTitleOffset(0.82);
+    //graph->GetXaxis()->SetLabelOffset(0.010);
+    mg->GetXaxis()->SetLabelSize(0.05);
+    mg->GetYaxis()->SetTitle(yTitle);
+    mg->GetYaxis()->CenterTitle();
+    mg->GetYaxis()->SetTitleSize(0.055);
+    mg->GetYaxis()->SetTitleOffset(0.9);
+    mg->GetYaxis()->SetLabelSize(0.05);
+    gStyle->SetTitleSize(0.08, "t");
+    mg->SetTitle(graphName);
+    // can->Update();
 
     can->SaveAs(name + ".png");
 
